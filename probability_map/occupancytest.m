@@ -7,12 +7,11 @@ plume4occupancy;
     % 4  ---> in plume (dynamic)
     % 5  ---> in plume, then out plume
     % 6  ---> out plume, then in plume
-P_uav = waypoints(5);
+P_uav = waypoints(2);
 
 Duration   = length(P_uav); %800;
 dt         = 1;             % Time step
 N          = length(0:dt:Duration);
-%P_uav      = zeros(N,2);  % position of uav
 Vwind      = [props.U+0.01,0.01];  % Constant wind vector
 Wind       = zeros(N,2);  % Wind vector
 
@@ -35,32 +34,24 @@ sy         = 10;   % Standard deviations may have to be modified
 mu         = 0.9;  % Sensor accuracy
 
 L          = 1;     % lower time bound
-K          = 0;     % Upper time bound
+K          = 0;     % Upper time bound; or current time step
 T          = zeros(1,N);
 
 tk_max     = (gridMap.xlims(2)-gridMap.xlims(1)-1500)/Vwind(1); % Max horizon time
+plume_start = 400; % Time between the start of the plume and the start of the mission
 
-
-
-A = 400; % 0 or 400 -> To use for the time look-back
-KK = K + A;
-
-alpha      = (1/M)*ones(M,N+A);   % Initializing probability map
+alpha      = (1/M)*ones(M,N+plume_start);   % Initializing probability map
 Sij        = zeros(M,1);
 beta       = zeros(M,M);     % Detection map
 gamma      = ones(M,M);     % Non-detection map
-
 
 figure(2)
 view(0,90);
 surf(X,Y,reshape(alpha(:,K+1),[51,51]))
 
-
-for Time = dt:dt:Duration+A
-
+for Time = dt:dt:Duration+plume_start
     
     K = K + 1;
-    KK = KK + 1;
     T(K+1) = Time;
     if Time > tk_max
         L = L + 1;
@@ -80,19 +71,18 @@ for Time = dt:dt:Duration+A
             Vx = windsum(1)*dt; Vy = windsum(2)*dt;
     % ===============================================================
     
-    if Time <= A
+    if Time <= plume_start
         alpha(:,K+1) = alpha(:,K);
         continue
     end
-%     
-    
-    detection = plume.conc(P_uav(K-A,1),P_uav(K-A,2)) > plume.threshold; % Have to change this to binary method
+
+    detection = plume.conc(P_uav(K-plume_start,1),P_uav(K-plume_start,2)) > plume.threshold; % Have to change this to binary method
     view(0,90);
     for tl = L:K
         for i = 1:M
 
-            deltax = P_uav(K-A,1) - xcell(i) - Vx;
-            deltay = P_uav(K-A,2) - ycell(i) - Vy;
+            deltax = P_uav(K-plume_start,1) - xcell(i) - Vx;
+            deltay = P_uav(K-plume_start,2) - ycell(i) - Vy;
             deviation_x = sqrt(T(K+1)-T(tl))*sx;
             deviation_y = sqrt(T(K+1)-T(tl))*sy;
             
@@ -104,17 +94,13 @@ for Time = dt:dt:Duration+A
                         (2*pi*deviation_x*deviation_y);   
             %else
              %   Sij(i) = 0;
-            %end 
-            if isnan(Sij(i))
-                keyboard
-            end
-            
+            %end             
         end
        if all(Sij == 0)
            keyboard
        end
        Sij = Sij./sum(Sij); % Equation 20
-        index = find_index(P_uav(K-A,1),P_uav(K-A,2));
+        index = find_index(P_uav(K-plume_start,1),P_uav(K-plume_start,2));
         if detection
             beta(:,index) = beta(:,index) + Sij;
         else
@@ -170,6 +156,27 @@ function P_uav = waypoints(c)
                 ];
         case 2
             P_uav = [
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
                 1320 80
                 1320 80
                 1320 80
