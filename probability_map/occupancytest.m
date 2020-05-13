@@ -1,110 +1,23 @@
 plume4occupancy;
 
 % Sample waypoints
-P_uav =[
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%    200 -300
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%     500 -200
-%    
-%     500 0
-%     500 10
-%     500 20
-%     500 30
-%     500 40
-%     500 50
-%     500 100
-%     500  120
-%     500 0
-%     490 0
-%     480 0
-%     490 0
-%     480 0
-%     480 0
-%     480 0
-%     480 0
-
-      1320 80
-      1320 70
-      1320 60
-      1320 50
-      1320 40
-      1320 30
-      1320 20
-      1320 80
-      1320 80
-      1320 80
-      1320 80
-      1320 80
-      10 80
-      10 80
-      10 80
-      10 80
-      10 80
-      10 80
-      10 80
-      10 80
-      10 80
-      10 80
-      10 80
-      10 80
-      
-%       1000 80
-%       1000 80
-%       1000 80
-%       1000 80
-%       1000 80
-%       1000 80
-%       1000 80
-%       1000 80
-%       1000 80
-%       1000 80
-%       1000 80
-%       1000 80
-%       1000 80
-%       1000 80
-%       1000 80
-%       1000 80
-%       1000 80
-%       1000 80
-      
-    
-    ];    
+    % 1  ---> out of plume (static)
+    % 2  ---> in plume (static)
+    % 3  ---> out of plume (dynamic)
+    % 4  ---> in plume (dynamic)
+    % 5  ---> in plume, then out plume
+    % 6  ---> out plume, then in plume
+P_uav = waypoints(5);
 
 Duration   = length(P_uav); %800;
 dt         = 1;             % Time step
 N          = length(0:dt:Duration);
 %P_uav      = zeros(N,2);  % position of uav
-Vwind      = [10*props.U+0.01,0.01];  % Constant wind vector
+Vwind      = [props.U+0.01,0.01];  % Constant wind vector
 Wind       = zeros(N,2);  % Wind vector
 
+
+global Lx Ly m
 Lx         = 40;    % Length of probability cells
 Ly         = 20;    % Length of probability cells
 m          = 51;    % number of cells in x-direction 
@@ -117,7 +30,7 @@ y          = gridMap.ylims(1):Ly:gridMap.ylims(2);
 xcell      = X(:); % 
 ycell      = Y(:); %
 
-sx         = 10;   % Standard deviations may have to be modified
+sx         = 20;   % Standard deviations may have to be modified
 sy         = 10;   % Standard deviations may have to be modified  
 mu         = 0.9;  % Sensor accuracy
 
@@ -125,24 +38,27 @@ L          = 1;     % lower time bound
 K          = 0;     % Upper time bound
 T          = zeros(1,N);
 
-tk_max     = (gridMap.xlims(2)-gridMap.xlims(1)-1000)/Vwind(1); % Max horizon time
+tk_max     = (gridMap.xlims(2)-gridMap.xlims(1)-1500)/Vwind(1); % Max horizon time
 
 
-
-figure(2)
-view(0,90);
-surf(X,Y,reshape(alpha(:,K+1),[51,51]))
 
 A = 400; % 0 or 400 -> To use for the time look-back
 KK = K + A;
 
 alpha      = (1/M)*ones(M,N+A);   % Initializing probability map
 Sij        = zeros(M,1);
+beta       = zeros(M,M);     % Detection map
+gamma      = ones(M,M);     % Non-detection map
+
+
+figure(2)
+view(0,90);
+surf(X,Y,reshape(alpha(:,K+1),[51,51]))
+
 
 for Time = dt:dt:Duration+A
-    beta       = zeros(M,1);     % Detection map
-    gamma      = ones(M,1);     % Non-detection map
 
+    
     K = K + 1;
     KK = KK + 1;
     T(K+1) = Time;
@@ -186,9 +102,6 @@ for Time = dt:dt:Duration+A
                 Sij(i) = Lx*Ly * exp((-deltax^2)/(2*deviation_x^2)) * ...
                         exp((-deltay^2)/(2*deviation_y^2)) / ...
                         (2*pi*deviation_x*deviation_y);   
-%                     if i == 1513 && tl == K
-%                         keyboard
-%                     end
             %else
              %   Sij(i) = 0;
             %end 
@@ -197,25 +110,26 @@ for Time = dt:dt:Duration+A
             end
             
         end
-
-%        Sij = Sij./sum(Sij); % Equation 20
-%         if tl == K && ((K-A) == length(P_uav))
-%             keyboard
-%         end
+       if all(Sij == 0)
+           keyboard
+       end
+       Sij = Sij./sum(Sij); % Equation 20
+        index = find_index(P_uav(K-A,1),P_uav(K-A,2));
         if detection
-            beta = beta + Sij;
-%             beta = beta .* Sij;
+            beta(:,index) = beta(:,index) + Sij;
         else
-            gamma = gamma .* (1 - mu*Sij);
+            gamma(:,index) = gamma(:,index) .* (1 - mu*Sij);
+%             Sij(Sij < 1e-10) = 0;
+%             gamma = gamma .* (1 - mu*Sij);
         end               
     end
     
     if detection
-        beta = beta./length(L:K);   %  Equation (11)
-        alpha(:,K+1) = M * alpha(:,K) .* beta ;
-%           alpha(:,K+1) = (M/sum(sum(beta))) * alpha(:,K)' .* beta ;
+        beta(:,index) = beta(:,index)./length(L:K);   %  Equation (11)
+        alpha(:,K+1) = M * beta * alpha(:,K) ;
     else
-        alpha(:,K+1) = (M/sum(sum(gamma))) * alpha(:,K) .* gamma ;
+        alpha(:,K+1) = (M/sum(sum(gamma))) * gamma * alpha(:,K)  ;
+%         alpha(:,K+1) = (M/sum(sum(gamma))) * alpha(:,K) .* gamma ;
     end
     pause(0.5);
     alpha(:,K+1) = alpha(:,K+1)./sum(alpha(:,K+1)); % <-------- Not part of the paper
@@ -223,6 +137,95 @@ for Time = dt:dt:Duration+A
     colorbar
     view(0,90);
     
+end
+
+function ind = find_index(xpos,ypos)
+    global m Lx Ly
+    a = round(xpos/Lx + 1);
+    b = round((ypos+500)/Ly + 1);
+    ind = a + (b-1)*m;
+end
+
+function P_uav = waypoints(c)
+    % 1  ---> out of plume (static)
+    % 2  ---> in plume (static)
+    % 3  ---> out of plume (dynamic)
+    % 4  ---> in plume (dynamic)
+    % 5  ---> in plume, then out plume
+    % 6  ---> out plume, then in plume
+    
+    switch c
+        case 1
+            P_uav = [
+                500 -200
+                500 -200
+                500 -200
+                500 -200
+                500 -200
+                500 -200
+                500 -200
+                500 -200
+                500 -200
+                500 -200
+                ];
+        case 2
+            P_uav = [
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                1320 80
+                ]; 
+        case 3
+            P_uav = [
+                1320 200
+                1320 190
+                1320 170
+                1320 150
+                1320 120
+                1320 100
+                ];   
+        case 4
+            P_uav = [
+                1320 0
+                1300 0
+                1280 0
+                1260 0
+                1200 0
+                1190 0
+                1160 0
+                1140 0
+                ];
+        case 5
+            P_uav = [
+                1320 200
+                1320 150
+                1320 100
+                1320 80
+                1320 60
+                1320 40
+                ];
+            P_uav = flip(P_uav);
+            
+        case 6
+            P_uav = [
+                1320 200
+                1320 150
+                1320 100
+                1320 80
+                1320 60
+                1320 40
+                ];
+        otherwise
+            disp('No Values');
+            P_uav =[];
+    end
+
 end
 
     
