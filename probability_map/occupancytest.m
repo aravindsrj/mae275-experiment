@@ -13,8 +13,8 @@ plume4occupancy;
         % 1  ---> 2000x1000 environment with stability type 'F'
         % 2  ---> 500x400 environment with stability type 'A'
     
-    
-P_uav = waypoints(6,2);
+% Pro tip: Do NOT change the second argument here -> Won't work without changing some other things    
+P_uav = waypoints(2,2);
 
 %% Plume and Simulation characteristics
 Duration   = length(P_uav); %800;
@@ -22,16 +22,18 @@ dt         = 1;                    % Time step
 N          = length(0:dt:Duration);
 Vwind      = [props.U+0.01,0.01];  % Constant wind vector
 Wind       = zeros(N,2);           % Wind vector
-sx         = 20;                   % Standard deviations may have to be modified
-sy         = 50;                   % Standard deviations may have to be modified  
+sx         = 10;                   % Standard deviations may have to be modified
+sy         = 5;                   % Standard deviations may have to be modified  
 mu         = 0.9;                  % Sensor accuracy
-lambda     = 150;                   % (meters); can be removed; a parameter to reduce horizon time so that plume estimate is not touching boundary
-tk_max     = (gridMap.xlims(2)-gridMap.xlims(1) - lambda)/Vwind(1); % Max horizon time
+lambda     = 25;                   % (meters); can be removed; a parameter to reduce horizon time so that plume estimate is not touching boundary
+%tk_max0    = (gridMap.xlims(2)-gridMap.xlims(1) - lambda)/Vwind(1); % Max horizon time
 L          = 1;                    % lower time bound
 K          = 0;                    % Upper time bound; or current time step
 T          = zeros(1,N);
 plume_start = 400; % Time between the start of the plume and the start of the mission
 gamma_wt   = 10;   % A weighting variable for gamma so that its significance is increased
+
+pos        = 0;    % UAV position pointer
 
 %% Environment dimensions
 global Lx Ly m
@@ -61,10 +63,13 @@ surf(X,Y,reshape(alpha(:,K+1),[m,n]))
 for Time = dt:dt:Duration+plume_start
     
     K = K + 1;
+    index = find_index(P_uav(pos+1,1),P_uav(pos+1,2), gridMap.ylims(1));
     T(K+1) = Time;
-    if Time > tk_max
-        L = L + 1;
-    end
+%     if Time > tk_max0
+%         L = L + 1;
+%     end
+    tk_max = find_tkmax(P_uav(pos+1,1), gridMap.xlims, lambda, Vwind(1)); % Currently this always assumes wind is from west (180 degree)
+    L = max(1,K-floor(tk_max));
        
     % =============== Append uav position ===========================
 %     if K == 1
@@ -84,16 +89,16 @@ for Time = dt:dt:Duration+plume_start
         alpha(:,K+1) = alpha(:,K);
         continue
     end
+    pos = pos + 1;
     
-    index = find_index(P_uav(K-plume_start,1),P_uav(K-plume_start,2), gridMap.ylims(1));
     
-    detection = plume.conc(P_uav(K-plume_start,1),P_uav(K-plume_start,2)) > plume.threshold; % Have to change this to binary method
+    detection = plume.conc(P_uav(pos,1),P_uav(pos,2)) > plume.threshold; % Have to change this to binary method
     beta(:,index) = zeros(M,1);
     for tl = L:K
         for i = 1:M % Calculation of Sij
             
-            deltax = P_uav(K-plume_start,1) - xcell(i) - Vx;
-            deltay = P_uav(K-plume_start,2) - ycell(i) - Vy;
+            deltax = P_uav(pos,1) - xcell(i) - Vx;
+            deltay = P_uav(pos,2) - ycell(i) - Vy;
             deviation_x = sqrt(T(K+1)-T(tl))*sx;
             deviation_y = sqrt(T(K+1)-T(tl))*sy;
             
@@ -110,7 +115,7 @@ for Time = dt:dt:Duration+plume_start
             %end
         end % // end cell traversal loop -> Calculation of Sij
         if all(Sij == 0)
-            keyboard
+            keyboard % If it reaches here, probably would have to adjust sx, sy
         end
         
         Sij = Sij./sum(Sij); % Equation 20
@@ -164,6 +169,11 @@ function ind = find_index(xpos,ypos, ylimit)
     a = round(xpos/Lx + 1);
     b = round((ypos-ylimit)/Ly + 1);
     ind = a + (b-1)*m;
+end
+
+function tk_max = find_tkmax(pos, xlims, lambda, windspeed)
+    tk_max = (pos(1)-xlims(1)-lambda)/windspeed;
+
 end
 
 function P_uav = waypoints(c, Set)
@@ -305,6 +315,38 @@ function P_uav = waypoints(c, Set)
                         400 50
                         400 50
                         ]; 
+                case 4
+                    P_uav = [
+                        400 10
+                        390 10
+                        380 10
+                        370 10
+                        360 10
+                        350 10
+                        340 10
+                        330 10
+                        320 10
+                        310 10
+                        300 10
+                        ];
+                case 5
+                    P_uav = [
+                        460 80
+                        450 80
+                        440 80
+                        430 80
+                        420 80
+                        410 80
+                        400 80
+                        390 80
+                        380 80
+                        380 60
+                        380 40
+                        380 20
+                        380 0
+                        ];
+                    P_uav = flip(P_uav);
+                    
                 case 6
                     P_uav = [
                         460 80

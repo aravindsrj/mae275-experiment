@@ -1,6 +1,7 @@
 %clear; clc;
 close all
 gridMap = GridWorld(10, 8, [0 500], [-200 200]);
+% gridMap = GridWorld();
 props = struct('rate',2,'U',5,'H',0,'source',[0,0,0]);
 
 % Stability Class: Input must be a letter from A to F
