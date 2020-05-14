@@ -14,7 +14,7 @@ plume4occupancy;
         % 2  ---> 500x400 environment with stability type 'A'
     
     
-P_uav = waypoints(2,2);
+P_uav = waypoints(6,2);
 
 %% Plume and Simulation characteristics
 Duration   = length(P_uav); %800;
@@ -23,7 +23,7 @@ N          = length(0:dt:Duration);
 Vwind      = [props.U+0.01,0.01];  % Constant wind vector
 Wind       = zeros(N,2);           % Wind vector
 sx         = 20;                   % Standard deviations may have to be modified
-sy         = 10;                   % Standard deviations may have to be modified  
+sy         = 50;                   % Standard deviations may have to be modified  
 mu         = 0.9;                  % Sensor accuracy
 lambda     = 150;                   % (meters); can be removed; a parameter to reduce horizon time so that plume estimate is not touching boundary
 tk_max     = (gridMap.xlims(2)-gridMap.xlims(1) - lambda)/Vwind(1); % Max horizon time
@@ -31,6 +31,7 @@ L          = 1;                    % lower time bound
 K          = 0;                    % Upper time bound; or current time step
 T          = zeros(1,N);
 plume_start = 400; % Time between the start of the plume and the start of the mission
+gamma_wt   = 10;   % A weighting variable for gamma so that its significance is increased
 
 %% Environment dimensions
 global Lx Ly m
@@ -304,6 +305,22 @@ function P_uav = waypoints(c, Set)
                         400 50
                         400 50
                         ]; 
+                case 6
+                    P_uav = [
+                        460 80
+                        450 80
+                        440 80
+                        430 80
+                        420 80
+                        410 80
+                        400 80
+                        390 80
+                        380 80
+                        380 60
+                        380 40
+                        380 20
+                        380 0
+                        ];
                 otherwise
                     disp('No Values');
                     P_uav =[];
