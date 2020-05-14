@@ -25,8 +25,7 @@ Wind       = zeros(N,2);           % Wind vector
 sx         = 20;                   % Standard deviations may have to be modified
 sy         = 10;                   % Standard deviations may have to be modified  
 mu         = 0.9;                  % Sensor accuracy
-lambda     = 150;                   % (meters); can be removed; a parameter to reduce horizon time so that plume estimate is not touching boundary
-tk_max     = (gridMap.xlims(2)-gridMap.xlims(1) - lambda)/Vwind(1); % Max horizon time
+tk_max     = (gridMap.xlims(2)-gridMap.xlims(1)-1500)/Vwind(1); % Max horizon time
 L          = 1;                    % lower time bound
 K          = 0;                    % Upper time bound; or current time step
 T          = zeros(1,N);
@@ -37,11 +36,11 @@ global Lx Ly m
 Lx         = 40;    % Length of probability cells
 Ly         = 20;    % Length of probability cells
 m          = floor((gridMap.xlims(2)-gridMap.xlims(1))/Lx) + 1;    % number of cells in x-direction 
-n          = floor((gridMap.ylims(2)-gridMap.ylims(1))/Ly) + 1;    % number of cells in y-direction    
+n          = floor((gridMap.xlims(2)-gridMap.xlims(1))/Lx) + 1;    % number of cells in y-direction    
 M          = m*n;   % Total cells
 
-x          = gridMap.xlims(1):Lx:gridMap.xlims(2);
-y          = gridMap.ylims(1):Ly:gridMap.ylims(2);
+x          = linspace(gridMap.xlims(1),gridMap.xlims(2),m);
+y          = linspace(gridMap.ylims(1),gridMap.ylims(2),n);
 [Y,X]      = meshgrid(y,x);
 xcell      = X(:); % 
 ycell      = Y(:); %
@@ -141,25 +140,18 @@ end
 
 %% 
 function ind = find_index(xpos,ypos, ylimit)
-        
-    global m Lx Ly
     if mod(xpos,Lx) ~= 0
         xbar = floor(xpos/Lx);
         if xbar >= Lx/2
-            xpos = xbar*Lx + Lx;
+            xpos = xbar + Lx;
         else
-            xpos = xbar*Lx;
+            xpos = xbar;
         end
     end
-    if mod(ypos,Ly) ~= 0
-        ybar = floor(ypos/Ly);
-        if ybar >= Ly/2
-            ypos = ybar*Ly + Ly;
-        else
-            ypos = ybar*Ly;
-        end
-    end
+    if mod(ypo
+        
 
+    global m Lx Ly
     a = round(xpos/Lx + 1);
     b = round((ypos-ylimit)/Ly + 1);
     ind = a + (b-1)*m;
