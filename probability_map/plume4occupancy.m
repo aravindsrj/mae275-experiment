@@ -27,7 +27,10 @@ c(isnan(c(:,:,1))) = 0;
 % colorbar
 % view(0,90)
 inplume = double(c > plume.threshold);
-
+figure(1)
+set(gcf, 'Position', [465.8000 41.8000 628.8000 740.8000]);
+subplot(2,1,1)
 t = surf(gridMap.Xq,gridMap.Yq,inplume(:,:,1));
 colorbar
 view(0,90)
+hold on

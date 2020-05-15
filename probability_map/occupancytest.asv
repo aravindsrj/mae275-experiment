@@ -1,3 +1,4 @@
+close all
 plume4occupancy;
 
 % Sample waypoints
@@ -13,8 +14,8 @@ plume4occupancy;
         % 1  ---> 2000x1000 environment with stability type 'F'
         % 2  ---> 500x400 environment with stability type 'A'
     
-    
-P_uav = waypoints(1,2);
+% Pro tip: Do NOT change the second argument here -> Won't work without changing some other things    
+P_uav = waypoints(4,2);
 
 %% Plume and Simulation characteristics
 Duration   = length(P_uav); %800;
@@ -25,8 +26,8 @@ Wind       = zeros(N,2);           % Wind vector
 sx         = 10;                   % Standard deviations may have to be modified
 sy         = 5;                   % Standard deviations may have to be modified  
 mu         = 0.9;                  % Sensor accuracy
-lambda     = 0;                   % (meters); can be removed; a parameter to reduce horizon time so that plume estimate is not touching boundary
-tk_max0    = (gridMap.xlims(2)-gridMap.xlims(1) - lambda)/Vwind(1); % Max horizon time
+lambda     = 25;                   % (meters); can be removed; a parameter to reduce horizon time so that plume estimate is not touching boundary
+%tk_max0    = (gridMap.xlims(2)-gridMap.xlims(1) - lambda)/Vwind(1); % Max horizon time
 L          = 1;                    % lower time bound
 K          = 0;                    % Upper time bound; or current time step
 T          = zeros(1,N);
@@ -54,9 +55,14 @@ alpha      = (1/M)*ones(M,N+plume_start);   % Initializing probability map
 Sij        = zeros(M,1);
 beta       = zeros(M,M);          % Detection map
 gamma      = (1/M)*ones(M,M);     % Non-detection map
-figure(2)
+
+subplot(2,1,1)
+h1 = plot3(P_uav(1,1),P_uav(1,2),1,'rx');
+subplot(2,1,2)
 view(0,90);
 surf(X,Y,reshape(alpha(:,K+1),[m,n]))
+hold on
+h2 = plot3(P_uav(1,1),P_uav(1,2),1,'rx');
 
 %%
 
@@ -65,19 +71,13 @@ for Time = dt:dt:Duration+plume_start
     K = K + 1;
     index = find_index(P_uav(pos+1,1),P_uav(pos+1,2), gridMap.ylims(1));
     T(K+1) = Time;
-%     if Time > tk_max0
-%         L = L + 1;
-%     end
-    tk_max = find_tkmax(P_uav(pos+1,1), lambda, Vwind(1)); % Currently this always assumes wind is from west
+   
+    % Currently this function always assumes wind is from west (180 degree)
+    % The final argument should actually be an average of wind vector (not
+    %                                                implemented currently)
+    tk_max = find_tkmax(P_uav(pos+1,1), gridMap.xlims, lambda, Vwind(1));
+    
     L = max(1,K-floor(tk_max));
-       
-    % =============== Append uav position ===========================
-%     if K == 1
-%         continue
-%     else
-%         % Code
-%     end
-    % ===============================================================
     
     % =============== Wind data =====================================
     Wind(K,:) = Vwind + [normrnd(0,0.5),normrnd(0,0.5)];
@@ -89,8 +89,15 @@ for Time = dt:dt:Duration+plume_start
         alpha(:,K+1) = alpha(:,K);
         continue
     end
-    pos = pos + 1;
     
+     % =============== Append uav position ===========================
+%     if K == 1
+%         continue
+%     else
+%         % Code
+%     end
+    pos = pos + 1;
+    % ===============================================================    
     
     detection = plume.conc(P_uav(pos,1),P_uav(pos,2)) > plume.threshold; % Have to change this to binary method
     beta(:,index) = zeros(M,1);
@@ -139,7 +146,13 @@ for Time = dt:dt:Duration+plume_start
     end
     pause(0.5);
     alpha(:,K+1) = alpha(:,K+1)./sum(alpha(:,K+1)); % <-------- Not part of the paper
+    subplot(2,1,1)
+    set(h1,'XData',P_uav(pos,1),'YData',P_uav(pos,2));
+    drawnow
+    subplot(2,1,2)
     surf(X,Y,reshape(alpha(:,K+1),[m,n]));
+    set(h2,'XData',P_uav(pos,1),'YData',P_uav(pos,2));
+    drawnow
     colorbar
     view(0,90);
     
@@ -174,172 +187,4 @@ end
 function tk_max = find_tkmax(pos, xlims, lambda, windspeed)
     tk_max = (pos(1)-xlims(1)-lambda)/windspeed;
 
-end
-
-function P_uav = waypoints(c, Set)
-    % 1  ---> out of plume (static)
-    % 2  ---> in plume (static)
-    % 3  ---> out of plume (dynamic)
-    % 4  ---> in plume (dynamic)
-    % 5  ---> in plume, then out plume
-    % 6  ---> out plume, then in plume
-    switch Set
-        case 1
-            switch c
-                case 1
-                    P_uav = [
-                        500 -200
-                        500 -200
-                        500 -200
-                        500 -200
-                        500 -200
-                        500 -200
-                        500 -200
-                        500 -200
-                        500 -200
-                        500 -200
-                        ];
-                case 2
-                    P_uav = [
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        1320 80
-                        ];
-                case 3
-                    P_uav = [
-                        1320 200
-                        1320 190
-                        1320 170
-                        1320 150
-                        1320 120
-                        1320 100
-                        1320 200
-                        1320 190
-                        1320 170
-                        1320 150
-                        1320 120
-                        1320 100
-                        1320 200
-                        1320 190
-                        1320 170
-                        1320 150
-                        1320 120
-                        1320 100
-                        ];
-                case 4
-                    P_uav = [
-                        1320 0
-                        1300 0
-                        1280 0
-                        1260 0
-                        1200 0
-                        1190 0
-                        1160 0
-                        1140 0
-                        ];
-                case 5
-                    P_uav = [
-                        1320 200
-                        1320 150
-                        1320 100
-                        1320 80
-                        1320 60
-                        1320 40
-                        ];
-                    P_uav = flip(P_uav);
-                    
-                case 6
-                    P_uav = [
-                        1320 200
-                        1320 150
-                        1320 100
-                        1320 80
-                        1320 60
-                        1320 40
-                        ];
-                otherwise
-                    disp('No Values');
-                    P_uav =[];
-            end
-            
-        case 2
-            switch c
-                case 1
-                    P_uav = [
-                        400 140
-                        400 140
-                        400 140
-                        400 140
-                        400 140
-                        400 140
-                        400 140
-                        400 140
-                        ];
-                case 2
-                    P_uav = [
-                        400 50
-                        400 50
-                        400 50
-                        400 50
-                        400 50
-                        400 50
-                        400 50
-                        400 50
-                        400 50
-                        ]; 
-                case 6
-                    P_uav = [
-                        460 80
-                        450 80
-                        440 80
-                        430 80
-                        420 80
-                        410 80
-                        400 80
-                        390 80
-                        380 80
-                        380 60
-                        380 40
-                        380 20
-                        380 0
-                        ];
-                otherwise
-                    disp('No Values');
-                    P_uav =[];
-            end
-        otherwise
-            disp('No Values');
-            P_uav =[];     
-    end
-
-end
-
-    
+end   
