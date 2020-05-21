@@ -15,7 +15,7 @@ plume4occupancy;
         % 2  ---> 500x400 environment with stability type 'A'
     
 % Pro tip: Do NOT change the second argument here -> Won't work without changing some other things    
-P_uav = waypoints(2,2);
+P_uav = waypoints(3,2);
 
 %% Plume and Simulation characteristics
 Duration   = length(P_uav); %800;
@@ -154,6 +154,9 @@ for Time = dt:dt:Duration+plume_start
     drawnow
     colorbar
     view(0,90);
+    if pos == 1
+        pause;
+    end
     
 end
 
