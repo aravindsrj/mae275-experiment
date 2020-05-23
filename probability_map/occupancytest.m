@@ -109,13 +109,15 @@ for Time = dt:dt:Duration+plume_start
     
     detection = plume.conc(P_uav(pos,1),P_uav(pos,2)) > plume.threshold; % Have to change this to binary method
     beta(:,index) = zeros(M,1);
+    gamma(:,index) = ones(M,1);
     for tl = L:K
+        deviation_x = sqrt(T(K+1)-T(tl))*sx;
+        deviation_y = sqrt(T(K+1)-T(tl))*sy;
         for i = 1:M % Calculation of Sij
             
             deltax = P_uav(pos,1) - xcell(i) - Vx;
             deltay = P_uav(pos,2) - ycell(i) - Vy;
-            deviation_x = sqrt(T(K+1)-T(tl))*sx;
-            deviation_y = sqrt(T(K+1)-T(tl))*sy;
+            
             
             %if abs(deltax) < 10*deviation_x && ...
             %       abs(deltay) < 10*deviation_y
