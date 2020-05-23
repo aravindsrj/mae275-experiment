@@ -1,6 +1,14 @@
 close all
 plume4occupancy;
-
+%% Saving video
+save_video = 0;
+if save_video
+    file_name = "C:\\Users\\aravi\\Documents\\Presentations\\Spring 2020 Lab Meeting\out_and_in.avi";
+    v = VideoWriter(file_name);
+    v.FrameRate = 1.5;
+    open(v);
+end
+%% Waypoints
 % Sample waypoints
     % First Argument:
         % 1  ---> out of plume (static)
@@ -15,7 +23,7 @@ plume4occupancy;
         % 2  ---> 500x400 environment with stability type 'A'
     
 % Pro tip: Do NOT change the second argument here -> Won't work without changing some other things    
-P_uav = waypoints(3,2);
+P_uav = waypoints(6,2);
 
 %% Plume and Simulation characteristics
 Duration   = length(P_uav); %800;
@@ -155,11 +163,19 @@ for Time = dt:dt:Duration+plume_start
     colorbar
     view(0,90);
     if pos == 1
-        pause;
+%         pause;
     end
+    
+    if save_video
+        frame = getframe(gcf);
+        writeVideo(v,frame);
+    end   
     
 end
 
+if save_video
+    close(v);
+end
 %% 
 function ind = find_index(xpos,ypos, ylimit)
         
