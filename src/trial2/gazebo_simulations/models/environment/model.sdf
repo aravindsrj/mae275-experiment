@@ -1,0 +1,56 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+    <model name="environment">
+        <static>true</static>
+        <link name="Part1">
+            <collision name="Part1_collision">
+                <geometry>
+                    <mesh>
+                        <uri>file://Part1.dae</uri>
+                    </mesh>
+                </geometry>
+            </collision>
+            <visual name="Part1_visual">
+                <geometry>
+                    <mesh>
+                        <uri>file://Part1.dae</uri>
+                    </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Part2">
+            <collision name="Part2_collision">
+                <geometry>
+                    <mesh>
+                        <uri>file://Part2.dae</uri>
+                    </mesh>
+                </geometry>
+            </collision>
+            <visual name="Part2_visual">
+                <geometry>
+                    <mesh>
+                        <uri>file://Part2.dae</uri>
+                    </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="outlet">
+            <collision name="outlet_collision">
+                <geometry>
+                    <mesh>
+                        <uri>file://outlet.dae</uri>
+                    </mesh>
+                </geometry>
+            </collision>
+            <visual name="outlet_visual">
+                <geometry>
+                    <mesh>
+                        <uri>file://outlet.dae</uri>
+                    </mesh>
+                </geometry>
+            </visual>
+        </link>
+    </model>
+</sdf>
