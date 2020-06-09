@@ -23,7 +23,7 @@ end
         % 2  ---> 500x400 environment with stability type 'A'
     
 % Pro tip: Do NOT change the second argument here -> Won't work without changing some other things    
-P_uav = waypoints(6,2);
+P_uav = waypoints(2,2);
 
 %% Plume and Simulation characteristics
 Duration   = length(P_uav); %800;
@@ -71,6 +71,8 @@ surf(X,Y,reshape(alpha(:,K+1),[m,n]))
 view(0,90);
 hold on
 h2 = plot3(P_uav(1,1),P_uav(1,2),1,'rx','LineWidth',5);
+lambda = 250;
+tk_max     = (gridMap.xlims(2)-gridMap.xlims(1) - lambda)/Vwind(1);
 
 %%
 
@@ -83,9 +85,13 @@ for Time = dt:dt:Duration+plume_start
     % Currently this function always assumes wind is from west (180 degree)
     % The final argument should actually be an average of wind vector (not
     %                                                implemented currently)
-    tk_max = find_tkmax(P_uav(pos+1,1), gridMap.xlims, lambda, Vwind(1));
+%     tk_max = find_tkmax(P_uav(pos+1,1), gridMap.xlims, lambda, Vwind(1));
     
-    L = max(1,K-floor(tk_max));
+    if Time > tk_max
+        L = L + 1;
+    end
+    
+%     L = max(1,K-floor(tk_max));
     
     % =============== Wind data =====================================
     Wind(K,:) = Vwind + [normrnd(0,0.5),normrnd(0,0.5)];
